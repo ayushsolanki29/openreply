@@ -1,5 +1,5 @@
 import NextAuth, { type NextAuthConfig } from "next-auth";
-import Resend from "next-auth/providers/resend";
+import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/db/client";
 import { ensureWorkspaceForUser, getPrimaryWorkspace } from "@/lib/workspace";
@@ -9,32 +9,51 @@ type AdapterPrismaClient = Parameters<typeof PrismaAdapter>[0];
 export const authConfig = {
   adapter: PrismaAdapter(prisma as unknown as AdapterPrismaClient),
   providers: [
-    Resend({
-      apiKey: process.env.RESEND_API_KEY ?? "missing-resend-api-key",
-      from: process.env.EMAIL_FROM ?? "OpenReply <login@example.com>",
+    Credentials({
+      credentials: {
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (credentials.password !== (process.env.ADMIN_PASSWORD ?? "admin")) {
+          return null;
+        }
+
+        const email = process.env.ADMIN_EMAIL ?? "admin@localhost";
+        
+        let user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+          user = await prisma.user.create({
+            data: { email, name: "Admin" }
+          });
+          await ensureWorkspaceForUser(user.id, user.email);
+        }
+        
+        return user;
+      }
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
+    async session({ session, token, user }) {
+      if (token?.sub) {
+        session.user.id = token.sub;
+      } else if (user) {
         session.user.id = user.id;
       }
       return session;
     },
-  },
-  events: {
-    async createUser({ user }) {
-      if (user.id) {
-        await ensureWorkspaceForUser(user.id, user.email);
+    async jwt({ token, user }) {
+      if (user) {
+        token.sub = user.id;
       }
-    },
+      return token;
+    }
   },
   pages: {
     signIn: "/login",
-    verifyRequest: "/verify-request",
   },
   session: {
-    strategy: "database",
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   trustHost: true,
   secret: process.env.NEXTAUTH_SECRET,
