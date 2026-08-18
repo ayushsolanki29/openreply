@@ -11,8 +11,13 @@ let connection: Redis | null = null;
 
 export function getRedisConnection(): Redis {
   if (!connection) {
-    connection = new Redis(process.env.REDIS_URL!, {
+    const url = process.env.REDIS_URL!;
+    connection = new Redis(url, {
       maxRetriesPerRequest: null, // Required by BullMQ
+      // Upstash and other hosted Redis providers use TLS (rediss://).
+      // Node's TLS stack rejects self-signed certs by default — disable that
+      // check so the connection works without bundling a CA cert.
+      tls: url.startsWith("rediss://") ? { rejectUnauthorized: false } : undefined,
     });
   }
   return connection;
