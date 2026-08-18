@@ -6,13 +6,6 @@ import { ensureWorkspaceForUser, getPrimaryWorkspace } from "@/lib/workspace";
 
 type AdapterPrismaClient = Parameters<typeof PrismaAdapter>[0];
 
-// ---------------------------------------------------------------------------
-// TEMPORARY: Auth is disabled. All requests are treated as the bypass user.
-// Remove this block and restore the real config when auth is re-enabled.
-// ---------------------------------------------------------------------------
-const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
-const BYPASS_EMAIL = process.env.BYPASS_AUTH_EMAIL ?? "admin@localhost";
-
 export const authConfig = {
   adapter: PrismaAdapter(prisma as unknown as AdapterPrismaClient),
   providers: [
@@ -44,19 +37,7 @@ export const authConfig = {
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
-async function getOrCreateBypassUser(): Promise<string> {
-  let user = await prisma.user.findUnique({ where: { email: BYPASS_EMAIL } });
-  if (!user) {
-    user = await prisma.user.create({
-      data: { email: BYPASS_EMAIL, name: "Admin" },
-    });
-  }
-  await ensureWorkspaceForUser(user.id, user.email);
-  return user.id;
-}
-
 export async function getCurrentUserId(): Promise<string | null> {
-  if (BYPASS_AUTH) return getOrCreateBypassUser();
   const session = await auth();
   return session?.user?.id ?? null;
 }
