@@ -20,7 +20,10 @@ async function loginAction(formData: FormData) {
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      redirect(`/login?error=1&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      const reason = encodeURIComponent(error.message ?? error.type ?? "unknown");
+      redirect(
+        `/login?error=1&reason=${reason}&callbackUrl=${encodeURIComponent(callbackUrl)}`
+      );
     }
     throw error;
   }
@@ -31,6 +34,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{
     error?: string;
+    reason?: string;
     callbackUrl?: string;
     template?: string;
   }>;
@@ -89,6 +93,11 @@ export default async function LoginPage({
             {params.error && (
               <p className="text-red-500 text-sm">
                 Something went wrong. Please try again.
+                {params.reason && (
+                  <span className="block mt-1 text-xs opacity-70 break-all">
+                    {decodeURIComponent(params.reason)}
+                  </span>
+                )}
               </p>
             )}
 
