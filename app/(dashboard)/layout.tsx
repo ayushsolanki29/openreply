@@ -4,6 +4,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db/client";
 import { ensureWorkspaceForUser } from "@/lib/workspace";
 
+// All dashboard pages are user-specific — never statically prerender them.
+export const dynamic = "force-dynamic";
+
 const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
 const BYPASS_EMAIL = process.env.BYPASS_AUTH_EMAIL ?? "admin@localhost";
 
