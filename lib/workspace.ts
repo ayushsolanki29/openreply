@@ -72,6 +72,17 @@ export async function ensureWorkspaceForUser(
   userId: string,
   email?: string | null
 ): Promise<Workspace> {
+  // Verify the user exists before attempting any writes.
+  // A stale JWT can carry an id that no longer exists in the database.
+  const userExists = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+
+  if (!userExists) {
+    throw new Error(`User ${userId} not found. Session may be stale.`);
+  }
+
   await acceptPendingInvitationsForUser(userId, email);
 
   const existingMembership = await getWorkspaceMembership(userId);

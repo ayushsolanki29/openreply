@@ -15,10 +15,16 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const workspace = await ensureWorkspaceForUser(
-    session.user.id,
-    session.user.email
-  );
+  let workspace;
+  try {
+    workspace = await ensureWorkspaceForUser(
+      session.user.id,
+      session.user.email
+    );
+  } catch (err) {
+    // Stale session — user no longer exists in the database
+    redirect("/login");
+  }
   const accounts = await prisma.instagramAccount.findMany({
     where: { workspaceId: workspace.id },
     orderBy: { connectedAt: "desc" },

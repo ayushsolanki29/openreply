@@ -10,12 +10,12 @@ export const metadata = {
 
 async function loginAction(formData: FormData) {
   "use server";
-  const password = String(formData.get("password") ?? "");
+  const email = String(formData.get("email") ?? "");
   const callbackUrl = String(formData.get("callbackUrl") ?? "/dashboard");
-  
+
   try {
-    await signIn("credentials", {
-      password,
+    await signIn("resend", {
+      email,
       redirectTo: callbackUrl,
     });
   } catch (error) {
@@ -50,7 +50,7 @@ export default async function LoginPage({
             OpenReply
           </h1>
           <p className="text-muted text-sm leading-relaxed mt-2">
-            Enter your admin password to sign in.
+            Enter your email to receive a sign-in link.
           </p>
         </div>
 
@@ -70,31 +70,33 @@ export default async function LoginPage({
             <input type="hidden" name="callbackUrl" value={callbackUrl} />
             <div className="space-y-2">
               <label
-                htmlFor="password"
+                htmlFor="email"
                 className="block text-sm font-medium text-foreground"
               >
-                Password
+                Email address
               </label>
               <input
-                id="password"
-                name="password"
-                type="password"
+                id="email"
+                name="email"
+                type="email"
                 required
-                autoComplete="current-password"
-                placeholder="Admin Password"
+                autoComplete="email"
+                placeholder="you@example.com"
                 className="w-full px-4 py-3 rounded bg-surface border border-border text-sm text-foreground placeholder:text-zinc-500 focus:border-accent/40 focus:outline-none transition-colors"
               />
             </div>
 
             {params.error && (
-              <p className="text-red-500 text-sm">Invalid password.</p>
+              <p className="text-red-500 text-sm">
+                Something went wrong. Please try again.
+              </p>
             )}
 
             <button
               type="submit"
               className="w-full inline-flex items-center justify-center gap-2 rounded bg-accent px-6 py-3.5 text-sm font-semibold text-white shadow-indigo-500/25 transition-all hover:shadow-indigo-500/30"
             >
-              Sign in
+              Send sign-in link
             </button>
           </form>
         </div>
